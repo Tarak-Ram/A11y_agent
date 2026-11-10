@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String?
+  googleId        String?   @unique
+  githubId        String?   @unique
+  apiKeyHash      String?   @unique
+  slackWebhookUrl String?
+  alertEmail      String?
+  githubInstallationId String?
+  createdAt       DateTime  @default(now())
+  projects        Project[]
+}
+
+model Project {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  url          String
+  repoFullName String?
+  locale       String    @default("en")
+  createdAt    DateTime  @default(now())
+  tasks        Task[]
+  personas     Persona[]
+  runs         Run[]
+
+  @@index([userId])
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  goal      String
+  createdAt DateTime @default(now())
+  runs      Run[]
+}
+
+model Persona {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type      String
+  settings  Json    @default("{}")
+
+  @@unique([projectId, type])
+}
+
+model Run {
+  id          String       @id @default(cuid())
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId      String
+  task        Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  status      String       @default("queued") // queued | running | completed | failed
+  startedAt   DateTime     @default(now())
+  finishedAt  DateTime?
+  personaRuns PersonaRun[]
+
+  @@index([projectId, startedAt])
+}
+
+model PersonaRun {
+  id            String    @id @default(cuid())
+  runId         String
+  run           Run       @relation(fields: [runId], references: [id], onDelete: Cascade)
+  personaType   String
+  status        String    @default("queued") // queued | running | done | failed
+  success       Boolean?
+  score         Int?
+  videoUrl      String?
+  summary       String?
+  stoppedReason String?
+  costUsd       Float     @default(0)
+  findings      Finding[]
+
+  @@index([runId])
+}
+
+model Finding {
+  id             String     @id @default(cuid())
+  personaRunId   String
+  personaRun     PersonaRun @relation(fields: [personaRunId], references: [id], onDelete: Cascade)
+  wcagRule       String
+  severity       String // critical | serious | moderate | minor
+  selector       String     @default("")
+  description    String
+  screenshotUrl  String?
+  confirmedByAxe Boolean    @default(false)
+  source         String     @default("agent") // agent | axe
+  axeRuleId      String?
+  html           String?
+  fixes          Fix[]
+
+  @@index([personaRunId])
+}
+
+model Fix {
+  id        String   @id @default(cuid())
+  findingId String
+  finding   Finding  @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  filePath  String
+  diff      String
+  status    String   @default("proposed") // proposed | pr_open | merged | closed | failed
+  prUrl     String?
+  createdAt DateTime @default(now())
+  // Patch as exact-match edits (re-applied against the latest file when the PR is opened)
+  edits       Json    @default("[]")
+  explanation String?
+  ruleKey     String?
+  branch      String?
+  personaType String?
+  beforeScore Int?
+  verifyRunId String?
+}

@@ -1,0 +1,14 @@
+{
+  "name": "a11yagents",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:infra": "docker compose up -d postgres redis",
+    "dev": "docker compose up --build",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "engines": { "node": ">=20" }
+}

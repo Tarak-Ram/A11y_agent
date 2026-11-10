@@ -1,0 +1,16 @@
+node_modules/
+.next/
+dist/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+storage/
+*.webm
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+.tmp/

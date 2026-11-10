@@ -1,0 +1,64 @@
+name: A11yAgents scan
+description: Run AI accessibility agents against your site and fail the build if critical findings appear.
+author: A11yAgents
+branding:
+  icon: eye
+  color: purple
+
+inputs:
+  api-key:
+    description: A11yAgents API key (Settings -> API key). Store it as a GitHub secret.
+    required: true
+  url:
+    description: The URL to scan, e.g. your preview deployment.
+    required: true
+  api-url:
+    description: Base URL of the A11yAgents API.
+    required: false
+    default: https://api.a11yagents.example.com
+  goal:
+    description: What the testers should try to do on the site.
+    required: false
+    default: Explore the main page and try the primary call-to-action, as a first-time visitor would.
+  personas:
+    description: Comma-separated personas (blind, low_vision, color_blind, motor_tremor, elderly_first_time, indian_language).
+    required: false
+    default: blind,low_vision,motor_tremor
+  fail-on:
+    description: Fail the build at this severity or worse (critical, serious, moderate, minor, none).
+    required: false
+    default: critical
+  timeout-minutes:
+    description: How long to wait for the scan to finish.
+    required: false
+    default: "10"
+
+outputs:
+  run-id:
+    description: The A11yAgents run id.
+    value: ${{ steps.scan.outputs.run-id }}
+  score:
+    description: Overall score (0-100).
+    value: ${{ steps.scan.outputs.score }}
+  critical:
+    description: Number of critical findings.
+    value: ${{ steps.scan.outputs.critical }}
+  report-url:
+    description: Link to the full report.
+    value: ${{ steps.scan.outputs.report-url }}
+
+runs:
+  using: composite
+  steps:
+    - id: scan
+      shell: bash
+      # Inputs go through env, never interpolated into the script, so they cannot inject shell.
+      env:
+        A11Y_API_KEY: ${{ inputs.api-key }}
+        A11Y_API_URL: ${{ inputs.api-url }}
+        A11Y_URL: ${{ inputs.url }}
+        A11Y_GOAL: ${{ inputs.goal }}
+        A11Y_PERSONAS: ${{ inputs.personas }}
+        A11Y_FAIL_ON: ${{ inputs.fail-on }}
+        A11Y_TIMEOUT_MIN: ${{ inputs.timeout-minutes }}
+      run: node "${{ github.action_path }}/scan.mjs"

@@ -1,0 +1,18 @@
+# Example: scan every pull request's preview deployment and block merges on critical findings.
+# Copy to your own repo as .github/workflows/a11y.yml and add the A11Y_API_KEY secret.
+name: Accessibility
+on:
+  pull_request:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: a11yagents/scan@v1
+        with:
+          api-key: ${{ secrets.A11Y_API_KEY }}
+          api-url: https://api.your-a11yagents.example.com
+          url: https://preview-${{ github.event.number }}.your-site.example.com
+          goal: Add a product to the cart and reach checkout
+          personas: blind,low_vision,motor_tremor
+          fail-on: critical

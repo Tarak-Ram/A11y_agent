@@ -1,0 +1,91 @@
+# Local development stack:  cp .env.example .env && docker compose up --build
+# Host ports are overridable (POSTGRES_PORT, REDIS_PORT, API_PORT, WEB_PORT) if yours are taken.
+# Add the broken sample site with:  docker compose --profile samples up --build
+x-env: &env
+  env_file:
+    - path: .env
+      required: false
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: a11y
+      POSTGRES_PASSWORD: a11y
+      POSTGRES_DB: a11y
+    ports: ["${POSTGRES_PORT:-5432}:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U a11y"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["${REDIS_PORT:-6379}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    <<: *env
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://a11y:a11y@postgres:5432/a11y
+      REDIS_URL: redis://redis:6379
+      STORAGE_LOCAL_DIR: /storage
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+      API_URL: http://localhost:${API_PORT:-4000}
+      WEB_URL: http://localhost:${WEB_PORT:-3000}
+    ports: ["${API_PORT:-4000}:4000"]
+    volumes: [storage:/storage]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-4000}
+        NEXT_PUBLIC_DEV_LOGIN: ${NEXT_PUBLIC_DEV_LOGIN:-1}   # email-only dev sign-in; set 0 for anything public
+    ports: ["${WEB_PORT:-3000}:3000"]
+    depends_on: [api]
+
+  agents:
+    <<: *env
+    build: { context: services/agents }
+    environment:
+      REDIS_URL: redis://redis:6379
+      STORAGE_LOCAL_DIR: /storage
+      API_URL: http://api:4000
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
+    volumes: [storage:/storage]
+    # Chromium's sandbox needs user namespaces; the image runs as a non-root user.
+    security_opt: ["seccomp=unconfined"]
+    depends_on:
+      redis: { condition: service_healthy }
+      api: { condition: service_healthy }
+
+  # Deliberately inaccessible page for demos and the e2e test: http://broken-shop:8000 (inside compose)
+  broken-shop:
+    profiles: ["samples"]
+    image: python:3.11-alpine
+    command: python -m http.server 8000 --directory /site
+    volumes: ["./samples/broken-shop:/site:ro"]
+    ports: ["8000:8000"]
+
+volumes:
+  pgdata:
+  storage:
