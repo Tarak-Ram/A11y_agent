@@ -21,7 +21,7 @@ def get_settings() -> Settings:
     e = os.getenv
     return Settings(
         gemini_api_key=e("GEMINI_API_KEY", ""),
-        gemini_model=e("GEMINI_MODEL", "gemini-2.5-flash"),
+        gemini_model=e("GEMINI_MODEL", "gemini-3.8-flash"),
         max_steps=int(e("MAX_STEPS", "40")),
         run_timeout_seconds=int(e("RUN_TIMEOUT_SECONDS", "300")),
         cost_cap_usd=float(e("RUN_COST_CAP_USD", "1.00")),

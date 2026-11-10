@@ -73,7 +73,7 @@ export class ProjectsService {
       const { GoogleGenAI } = await import('@google/genai');
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const res = await ai.models.generateContent({
-        model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
+        model: process.env.GEMINI_MODEL ?? 'gemini-3.8-flash',
         contents: `Homepage text of ${safe}:\n${text}\n\nSuggest 3 to 5 key tasks a first-time visitor would try (e.g. sign up, buy a product, find contact info). Return JSON: [{"name": short title, "goal": one-sentence instruction for a tester}].`,
         config: { responseMimeType: 'application/json' },
       });

@@ -29,7 +29,7 @@ ${files}
 
 Return JSON: {"file": "<path of exactly one file above>", "edits": [{"old": "<exact text from that file, unique in it>", "new": "<replacement>"}], "explanation": "<2 sentences, plain English, why this fixes it for people>"}.
 Rules: every "old" must be copied verbatim and appear exactly once in the file; change only what the defect needs; do not reformat, rename, or touch other code; at most 4 edits. If the defect cannot be fixed in these files, return {"file":"","edits":[],"explanation":"<why>"}.`;
-    const res = await ai.models.generateContent({ model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json', temperature: 0.1 } });
+    const res = await ai.models.generateContent({ model: process.env.GEMINI_MODEL ?? 'gemini-3.8-flash', contents: prompt, config: { responseMimeType: 'application/json', temperature: 0.1 } });
     const out = JSON.parse(res.text ?? '{}');
     return { file: String(out.file ?? ''), edits: Array.isArray(out.edits) ? out.edits.map((e: any) => ({ old: String(e.old ?? ''), new: String(e.new ?? '') })) : [], explanation: String(out.explanation ?? '') };
   }

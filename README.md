@@ -56,7 +56,7 @@ python -m a11y_agents.cli --url http://localhost:8000 --persona motor_tremor --g
 
 | Variable | Used by | Purpose |
 |---|---|---|
-| `GEMINI_API_KEY` | agents, api | Agent loop, task suggestions, fix generation. `GEMINI_MODEL` (default `gemini-2.5-flash`) |
+| `GEMINI_API_KEY` | agents, api | Agent loop, task suggestions, fix generation. `GEMINI_MODEL` (default `gemini-3.8-flash`) |
 | `DATABASE_URL` | api | PostgreSQL connection string |
 | `REDIS_URL` | api, agents | BullMQ queue and live run events |
 | `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY` | api | GitHub App for the fix engine (PEM; `\n` escapes are accepted). Also `GITHUB_APP_SLUG`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_CLIENT_ID/SECRET` |
