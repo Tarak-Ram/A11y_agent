@@ -1,7 +1,8 @@
 import { BadGatewayException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { createSign } from 'crypto';
 
-const API = 'https://api.github.com';
+// Overridable for GitHub Enterprise Server and for tests.
+const API = (process.env.GITHUB_API_URL ?? 'https://api.github.com').replace(/\/$/, '');
 const SOURCE_EXT = /\.(html?|jsx|tsx|vue|svelte|css|scss|sass|less|php|erb|hbs|njk|astro|js|ts)$/i;
 const SKIP = /(^|\/)(node_modules|dist|build|\.next|vendor|coverage|\.git)\//;
 

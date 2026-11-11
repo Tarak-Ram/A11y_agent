@@ -19,6 +19,7 @@ import redis
 from .models import Job
 from .runner import run_persona
 from .storage import get_storage
+from .urlfix import friendly_nav_error, rewrite_localhost
 
 QUEUE_NAME = "persona-jobs"
 API_URL = os.getenv("API_URL", "http://localhost:4000")
@@ -77,7 +78,7 @@ async def handle(data: dict) -> None:
         run_id=data["runId"],
         persona_run_id=data["personaRunId"],
         persona=data["persona"],
-        url=data["url"],
+        url=rewrite_localhost(data["url"], os.getenv("LOCALHOST_REWRITE")),
         goal=data["goal"],
         locale=data.get("locale"),
         max_steps=data.get("maxSteps", 40),
@@ -100,7 +101,7 @@ async def handle(data: dict) -> None:
             }
         except Exception as e:  # noqa: BLE001
             log.error("job failed", exc_info=True, extra=ctx)
-            body = {"status": "failed", "summary": f"{type(e).__name__}: {e}"[:300], "stopped_reason": "error", "findings": []}
+            body = {"status": "failed", "summary": friendly_nav_error(job.url, e)[:400], "stopped_reason": "error", "findings": []}
         r = await api.post(f"/internal/persona-runs/{job.persona_run_id}/result", json=body)
         r.raise_for_status()
     log.info("job done", extra={"ctx": {**ctx["ctx"], "status": body["status"]}})

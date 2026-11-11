@@ -94,3 +94,16 @@ def test_llm_failures_become_friendly_messages_and_keep_axe_results(tmp_path, mo
     res = asyncio.run(runner.run_persona(Job(run_id="t", persona_run_id="pq", persona="blind", url=SAMPLE, goal="x")))
     assert res.stopped_reason == "error" and "quota" in res.summary.lower()
     assert len(res.findings) >= 5  # axe results survive the LLM failure
+
+
+def test_localhost_rewrite_and_friendly_navigation_errors():
+    from a11y_agents.urlfix import friendly_nav_error, rewrite_localhost
+
+    h = "host.docker.internal"
+    assert rewrite_localhost("http://localhost:8765/a?b=1#c", h) == "http://host.docker.internal:8765/a?b=1#c"
+    assert rewrite_localhost("http://127.0.0.1/x", h) == "http://host.docker.internal/x"
+    assert rewrite_localhost("https://example.com/", h) == "https://example.com/"
+    assert rewrite_localhost("http://localhost:3000", None) == "http://localhost:3000"  # off by default outside Docker
+    assert "host.docker.internal" in friendly_nav_error("http://localhost:1/", Exception("net::ERR_CONNECTION_REFUSED"))
+    assert "could not reach" in friendly_nav_error("http://nope.test/", Exception("net::ERR_NAME_NOT_RESOLVED"))
+    assert "too long" in friendly_nav_error("http://slow.test/", Exception("Timeout 45000ms exceeded"))

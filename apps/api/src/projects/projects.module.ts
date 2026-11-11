@@ -71,7 +71,7 @@ export class ProjectsService {
       const html = await fetch(safe, { signal: AbortSignal.timeout(10_000), redirect: 'follow' }).then((r) => r.text());
       const text = html.replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 6000);
       const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, ...(process.env.GEMINI_BASE_URL ? { httpOptions: { baseUrl: process.env.GEMINI_BASE_URL } } : {}) });
       const res = await ai.models.generateContent({
         model: process.env.GEMINI_MODEL ?? 'gemini-3.8-flash',
         contents: `Homepage text of ${safe}:\n${text}\n\nSuggest 3 to 5 key tasks a first-time visitor would try (e.g. sign up, buy a product, find contact info). Return JSON: [{"name": short title, "goal": one-sentence instruction for a tester}].`,

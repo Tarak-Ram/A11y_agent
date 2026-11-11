@@ -12,7 +12,7 @@ const STATUS: Record<string, string> = { proposed: 'Proposed, not yet sent to Gi
 function DiffView({ diff }: { diff: string }) {
   const lines = diff.split('\n').filter((l) => !l.startsWith('===') && !l.startsWith('Index:'));
   return (
-    <pre className="overflow-x-auto rounded border-2 border-border bg-surface p-3 text-sm" tabIndex={0} aria-label="Code changes">
+    <pre className="relative overflow-x-auto rounded border-2 border-border bg-surface p-3 text-sm" tabIndex={0} aria-label="Code changes">
       {lines.map((l, i) => {
         const kind = l.startsWith('+') && !l.startsWith('+++') ? 'added' : l.startsWith('-') && !l.startsWith('---') ? 'removed' : 'context';
         return (

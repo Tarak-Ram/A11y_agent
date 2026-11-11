@@ -16,7 +16,7 @@ export class GeminiPatchModel extends PatchModel {
   async propose(input: Parameters<PatchModel['propose']>[0]) {
     if (!process.env.GEMINI_API_KEY) throw new ServiceUnavailableException('GEMINI_API_KEY is not set');
     const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, ...(process.env.GEMINI_BASE_URL ? { httpOptions: { baseUrl: process.env.GEMINI_BASE_URL } } : {}) });
     const files = input.files.map((f) => `=== FILE: ${f.path} ===\n${f.content.slice(0, 60_000)}`).join('\n\n');
     const prompt = `You fix ONE accessibility defect with the smallest possible source change.
 WCAG rule: ${input.rule} (${input.finding.wcagRule}). Guidance: ${input.hint}

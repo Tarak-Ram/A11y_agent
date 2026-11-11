@@ -115,7 +115,7 @@ export function ReportView({ runId }: { runId: string }) {
           Showing {shown.length} of {rows.length} findings.
         </p>
 
-        <div className="mt-2 overflow-x-auto">
+        <div className="relative mt-2 overflow-x-auto">
           <table className="w-full min-w-[48rem] border-collapse text-left">
             <caption className="sr-only">Accessibility findings, most severe first</caption>
             <thead>

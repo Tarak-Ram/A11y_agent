@@ -71,6 +71,9 @@ services:
       STORAGE_LOCAL_DIR: /storage
       API_URL: http://api:4000
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
+      # A site typed as http://localhost:3000 is opened on YOUR machine (the host), not inside this container.
+      LOCALHOST_REWRITE: host.docker.internal
+    extra_hosts: ["host.docker.internal:host-gateway"]
     volumes: [storage:/storage]
     # Chromium's sandbox needs user namespaces; the image runs as a non-root user.
     security_opt: ["seccomp=unconfined"]
@@ -84,7 +87,7 @@ services:
     image: python:3.11-alpine
     command: python -m http.server 8000 --directory /site
     volumes: ["./samples/broken-shop:/site:ro"]
-    ports: ["8000:8000"]
+    ports: ["${SAMPLE_PORT:-8000}:8000"]
 
 volumes:
   pgdata:
