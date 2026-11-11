@@ -75,3 +75,22 @@ def test_axe_confirmation_is_not_fooled_by_page_level_rules():
     assert r["div_button"][0] is False
     assert r["bogus_sc"][0] is False
     assert r["no_selector"] == (False, None)
+
+
+def test_llm_failures_become_friendly_messages_and_keep_axe_results(tmp_path, monkeypatch):
+    from a11y_agents import runner
+
+    assert "quota" in runner.friendly_llm_error(Exception("429 RESOURCE_EXHAUSTED ...")).lower()
+    assert "overloaded" in runner.friendly_llm_error(Exception("503 UNAVAILABLE")).lower()
+    assert "model was not found" in runner.friendly_llm_error(Exception("404 NOT_FOUND models/x"))
+    assert "key was rejected" in runner.friendly_llm_error(Exception("403 PERMISSION_DENIED"))
+
+    async def boom(*a, **k):
+        raise Exception("429 RESOURCE_EXHAUSTED")
+
+    monkeypatch.setenv("STORAGE_LOCAL_DIR", str(tmp_path))
+    monkeypatch.setenv("GEMINI_API_KEY", "dummy")
+    monkeypatch.setattr(runner, "_drive_llm", boom)
+    res = asyncio.run(runner.run_persona(Job(run_id="t", persona_run_id="pq", persona="blind", url=SAMPLE, goal="x")))
+    assert res.stopped_reason == "error" and "quota" in res.summary.lower()
+    assert len(res.findings) >= 5  # axe results survive the LLM failure

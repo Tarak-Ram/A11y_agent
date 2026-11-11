@@ -41,6 +41,10 @@ If a host port is taken, set `WEB_PORT`, `API_PORT`, `POSTGRES_PORT` or `REDIS_P
 
 **Signing in locally:** OAuth needs real Google/GitHub client credentials. The compose build enables an email-only dev sign-in (`NEXT_PUBLIC_DEV_LOGIN=1`; the API's `/auth/dev-login` is disabled when `NODE_ENV=production`). Set `NEXT_PUBLIC_DEV_LOGIN=0` for any shared environment.
 
+### Gemini quotas and model choice
+
+A persona run makes roughly 15-25 Gemini requests, so the **free tier (about 20 requests per model per day)** covers about one persona run a day. A 429 `RESOURCE_EXHAUSTED` is recorded in the report as "quota exceeded" and the axe results are kept. For real use enable billing on the key. Model availability changes: if the default model is overloaded (503/504) or unavailable (404), set `GEMINI_MODEL` (e.g. `gemini-3.5-flash`); `gemini-2.5-flash` is closed to new users. Calls retry 429/5xx with backoff.
+
 ### Without Gemini
 
 Everything except the LLM works without a key: personas then run **axe-only** (no agent steps), which is what the tests use.

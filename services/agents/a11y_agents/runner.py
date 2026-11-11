@@ -21,6 +21,20 @@ PRICE_IN = float(os.getenv("GEMINI_PRICE_IN_PER_TOKEN", "0.30e-6"))
 PRICE_OUT = float(os.getenv("GEMINI_PRICE_OUT_PER_TOKEN", "2.50e-6"))
 
 
+def friendly_llm_error(e: Exception) -> str:
+    """Short, actionable text for the report instead of a raw exception dump."""
+    text = f"{type(e).__name__} {e}"
+    if "RESOURCE_EXHAUSTED" in text or "429" in text or "quota" in text.lower():
+        return "The AI agent could not run: the Gemini API quota was exceeded (free tier is about 20 requests per model per day). Axe results are still included; retry later or enable billing."
+    if "UNAVAILABLE" in text or "DEADLINE_EXCEEDED" in text or " 503" in text or " 504" in text:
+        return "The AI agent could not run: Gemini was overloaded or timed out. Axe results are still included; try again shortly or set GEMINI_MODEL to another model."
+    if "API key" in text or "PERMISSION_DENIED" in text or "UNAUTHENTICATED" in text or "403" in text or "401" in text:
+        return "The AI agent could not run: the Gemini API key was rejected. Check GEMINI_API_KEY."
+    if "NOT_FOUND" in text or " 404" in text:
+        return "The AI agent could not run: the Gemini model was not found. Check GEMINI_MODEL."
+    return f"The AI agent stopped with an unexpected error ({type(e).__name__}). Axe results are still included."
+
+
 async def _drive_llm(ctx: AgentContext, persona, goal: str, timeout: int, cost_cap: float) -> tuple[str, float]:
     """Run the ADK agent loop. Returns (stopped_reason, cost_usd)."""
     from google.adk.agents import Agent
@@ -118,7 +132,7 @@ async def run_persona(job: Job, emit: Emit = lambda *_: None, use_llm: bool = Tr
                 reason, cost = await _drive_llm(ctx, persona, job.goal, s.run_timeout_seconds, s.cost_cap_usd)
             except Exception as e:  # noqa: BLE001  keep going: axe results are still valuable
                 reason = "error"
-                ctx.summary = f"agent error: {type(e).__name__}: {e}"[:300]
+                ctx.summary = friendly_llm_error(e)
         import tempfile
 
         for n, issue in enumerate(ctx.issues):
