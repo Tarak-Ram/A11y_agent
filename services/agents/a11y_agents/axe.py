@@ -73,10 +73,12 @@ async def confirm_issue(page: Page, selector: str, wcag_rule: str, violations: l
     """
     if not selector:
         return False, None
+    numeric = bool(wcag_rule and re.match(r"^\d\.\d\.\d+$", wcag_rule))
     candidates = []
     for v in violations:
         sc = wcag_from_tags(v.get("tags", []))
-        if wcag_rule and re.match(r"^\d\.\d\.\d+$", wcag_rule) and sc and wcag_rule not in sc:
+        # A claim about a specific success criterion is only corroborated by a violation of that criterion.
+        if numeric and wcag_rule not in sc:
             continue
         for node in v["nodes"]:
             if node.get("target"):
@@ -89,7 +91,10 @@ async def confirm_issue(page: Page, selector: str, wcag_rule: str, violations: l
             if (!el) return null;
             for (const c of cands) {
               let t; try { t = document.querySelector(c.sel); } catch (e) { continue; }
-              if (t && (t === el || t.contains(el) || el.contains(t))) return c.id;
+              if (!t) continue;
+              // Page-level findings (on <html>/<body>) say nothing about one particular element.
+              if (t === document.documentElement || t === document.body) continue;
+              if (t === el || t.contains(el) || el.contains(t)) return c.id;
             }
             return null;
         }""",

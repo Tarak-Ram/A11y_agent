@@ -53,3 +53,25 @@ def test_score_caps_repeats_and_discounts_best_practice():
     bp = [f("moderate", "region", sc="region")]
     assert score(bp, True) == 98  # best-practice-only: 4 * 0.5
     assert 0 < score([f("critical", "image-alt")] * 3 + [f("critical", "select-name"), f("critical", "button-name"), f("serious", "color-contrast")] * 2, True) < 40
+
+
+def test_axe_confirmation_is_not_fooled_by_page_level_rules():
+    """Regression from the first real Gemini run: 'landmark-one-main' (on <html>) must not 'confirm' element-level claims."""
+    from a11y_agents.axe import confirm_issue, run_axe
+
+    async def go():
+        async with BrowserSession(BrowserOptions()) as bs:
+            await bs.goto(SAMPLE)
+            v = await run_axe(bs.page)
+            return {
+                "real": await confirm_issue(bs.page, "#add-shoe", "4.1.2", v),  # empty button: axe button-name
+                "div_button": await confirm_issue(bs.page, "#checkout > div", "2.1.1", v),  # axe does not flag this
+                "bogus_sc": await confirm_issue(bs.page, "#add-shoe", "1.4.3", v),  # axe flags it, but for another criterion
+                "no_selector": await confirm_issue(bs.page, "", "4.1.2", v),
+            }
+
+    r = asyncio.run(go())
+    assert r["real"] == (True, "button-name")
+    assert r["div_button"][0] is False
+    assert r["bogus_sc"][0] is False
+    assert r["no_selector"] == (False, None)

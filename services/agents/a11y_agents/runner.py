@@ -39,10 +39,17 @@ async def _drive_llm(ctx: AgentContext, persona, goal: str, timeout: int, cost_c
             ctx.pending_image = None
         return None
 
+    from google.adk.models.google_llm import Gemini
+
+    # Gemini sheds load with 503/429 at busy times; retry with backoff instead of failing the whole persona run.
+    model = Gemini(
+        model=s.gemini_model,
+        retry_options=types.HttpRetryOptions(attempts=6, initial_delay=2.0, max_delay=30.0, exp_base=2.0, http_status_codes=[429, 500, 503, 504]),
+    )
     agent = Agent(
         before_model_callback=attach_image,
         name=f"{persona.type}_persona",
-        model=s.gemini_model,
+        model=model,
         instruction=persona.system_prompt(goal, ctx.max_steps),
         tools=build_tools(ctx, persona.tools),
     )
